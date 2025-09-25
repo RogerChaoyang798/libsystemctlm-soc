@@ -172,3 +172,31 @@ OWNERSHIP_FLIP: 0x304
 写数据：0xC000
 读数据：0x8000
 写 strobe：0x10000
+
+
+
+###访问RTL寄存器
+结论
+DRAM_OFFSET_WRITE_SLAVE 等于 AXI-Slave 桥在 RTL 地址空间中的 “写数据缓冲区窗口（Write Data Buffer）” 基址。其数值为相对于 USR_SLV_BASE_ADDR 的偏移 0x0000C000。
+依据与出处
+在头文件 
+rtl-bridges/pcie-host/axi/tlm/private/user_slave_addr.h
+ 中：
+USR_SLV_BASE_ADDR = 0x0
+DRAM_OFFSET_WRITE_SLAVE = USR_SLV_BASE_ADDR + 0xC000
+在函数 
+axi2tlm_hw_bridge::process_desc_free()
+（文件 
+rtl-bridges/pcie-host/axi/tlm/axi2tlm-hw-bridge.h
+）中，非 mode1 情况下写事务会从这个窗口读取待写入的数据：
+dev_copy_from(DRAM_OFFSET_WRITE_SLAVE + data_offset, ...)
+与 RTL 的对应关系
+在 RTL 的地址映射中（参见寄存器/地址映射文档，如 docs/rtl-bridges/registers/AXI_SLAVE_ADDR.csv），该偏移对应的就是 AXI Slave 端提供给主机侧写入数据的 RAM/BRAM 窗口的解码段。也就是说：
+RTL 解码到偏移 0xC000 的区域，用作写数据缓冲区；
+TLM 侧通过 DRAM_OFFSET_WRITE_SLAVE + data_offset 访问该窗口，data_offset 由描述符里的 DESC_0_DATA_OFFSET_REG_ADDR_SLAVE 提供。
+实际总线地址计算
+访问该窗口的实际总线地址为：
+absolute_addr = base_addr + (0xC000 + data_offset)
+其中 base_addr 是桥实例的基地址（由仿真或平台配置提供）。
+Feedback submitted
+
