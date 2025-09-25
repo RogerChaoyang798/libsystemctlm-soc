@@ -461,7 +461,7 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 	resp = desc_access(0, addr, is_write, len, be, be_len, genattr);
 
 	if (!is_write && (resp == AXI_OKAY || resp == AXI_EXOKAY)) {
-		dev_copy_from(DRAM_OFFSET_READ_MASTER + offset, data, len, be, be_len);
+		dev_copy_from(DRAM_OFFSET_READ_MASTER + offset, , len, be, be_len);
 	}
 	D(hexdump("tlm2axi-data: ", data, len));
 	tlm_gp_set_axi_resp(trans, resp);
@@ -478,7 +478,9 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 	// For transactions that are non-Early-Ack, any wire update as side
 	// effects should be visible before we response.
 	process_wires_ev.notify();
+	
 	do {
+		// 执行 process_wires()，只能执行一个software trigger
 		wait(SC_ZERO_TIME);
 	} while (processing_wires);
 }
