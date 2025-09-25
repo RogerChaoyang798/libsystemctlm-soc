@@ -296,11 +296,12 @@ void tlm_hw_bridge_base::process_wires(void)
 		} while (r_toggles == 0);
 
 		processing_wires++;
+		// 32条中断线
 		dev_write32(INTR_C2H_TOGGLE_CLEAR_0_REG_ADDR_SLAVE,
 				r_toggles);
 		dev_write32(INTR_C2H_TOGGLE_CLEAR_1_REG_ADDR_SLAVE,
 				r_toggles >> 32);
-
+			// 64位读法
 		r_irqs = dev_read32(C2H_INTR_STATUS_1_REG_ADDR_SLAVE);
 		r_irqs <<= 32;
 		r_irqs |= dev_read32(C2H_INTR_STATUS_0_REG_ADDR_SLAVE);

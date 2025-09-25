@@ -5,19 +5,19 @@ flowchart TD
   B --> C[Init members: init_socket, desc_busy=0, we_init_socket, we_target_socket, wrap_expander, mm=NULL]
   C --> D[mode1 = true]
   D --> E{mode1?}
-  E -- Yes --> F[mm = new tlm_mm_vfio(MAX_NR_DESCRIPTORS, AXI4_MAX_BURSTLENGTH*1024/8, vdev)]
+  E -- Yes --> F[mm = new tlm_mm_vfio_MAX_NR_DESCRIPTORS, AXI4_MAX_BURSTLENGTH*1024/8, vdev]
   E -- No --> G[mm remains NULL]
   F --> H
   G --> H
-  H[we_target_socket.register_b_transport(we_b_transport)] --> I[we_init_socket.bind(wrap_expander.target_socket)]
-  I --> J[wrap_expander.init_socket(we_target_socket)]
-  J --> K[SC_THREAD(reset_thread)]
-  K --> L[SC_THREAD(work_thread)]
-  L --> M[SC_THREAD(process_wires) from base]
+  H[we_target_socket注册we_b_transport] --> I[we_init_socket.bind-wrap_expander.target_socket]
+  I --> J[wrap_expander.init_socket-we_target_socket]
+  J --> K[SC_THREAD_reset_thread]
+  K --> L[SC_THREAD_work_thread]
+  L --> M[SC_THREAD_process_wires_ from base]
   M --> N[End]
 
 
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::reset_thread()"]
 
   A[Loop forever] --> B[wait(rst.negedge_event); wait(SC_ZERO_TIME)]
@@ -48,7 +48,7 @@ flowchart TD
   W --> X
   X --> A
 
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::process_be(data_offset, size, in32, out32) -> bool"]
 
   A[Start] --> B[assert(data_offset % 4 == 0)]
@@ -66,7 +66,7 @@ flowchart TD
   K --> L[return needed (true)]
 
 
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::process_desc_free(d, r_avail)"]
 
   A[Start] --> B[desc_addr = this->desc_addr(d)]
@@ -138,76 +138,72 @@ flowchart TD
   BA --> BC[End]
   BB --> BC[End]
 
-
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::process(r_avail) -> unsigned int"]
 
-  A[Start] --> B[dev_write32(INTR_TXN_AVAIL_CLEAR, r_avail)]
-  B --> C[busy = dev_read32(STATUS_BUSY)]
-  C --> D[own  = dev_read32(OWNERSHIP)]
-  D --> E[ack = (~busy) & (~own) & desc_busy & DESC_MASK]
+  A[Start] --> B["dev_write32(INTR_TXN_AVAIL_CLEAR, r_avail)"]
+  B --> C["busy = dev_read32(STATUS_BUSY)"]
+  C --> D["own  = dev_read32(OWNERSHIP)"]
+  D --> E["ack = (~busy) & (~own) & desc_busy & DESC_MASK"]
   E --> F{ack != 0?}
-  F -- Yes --> G{!busy && !own?}
-  G -- Yes --> H[dev_write32(OWNERSHIP_FLIP, ack)]
+  F -- Yes --> G{"!busy && !own?"}
+  G -- Yes --> H["dev_write32(OWNERSHIP_FLIP, ack)"]
   G -- No --> I[ack = 0]
   H --> J
   I --> J
-  J --> K[for d in [0..MAX_NR_DESCRIPTORS)]
-  K --> L{r_avail bit d set?}
-  L -- Yes --> M[process_desc_free(d, r_avail)]
+  J --> K[for d in 0..MAX_NR_DESCRIPTORS]
+  K --> L{"r_avail bit d set?"}
+  L -- Yes --> M["process_desc_free(d, r_avail)"]
   L -- No --> N[No op]
   M --> O
   N --> O
-  O{ack bit d set?} -- Yes --> P[desc_state[d]=FREE; desc_busy&=~(1<<d); if(mm) desc_gp[d]->release(); desc_gp[d]=NULL]
+  O{ack bit d set?} -- Yes --> P["desc_state[d]=FREE; desc_busy&=~(1<<d); if(mm) desc_gp[d]->release(); desc_gp[d]=NULL"]
   O -- No --> Q[No op]
   P --> R
   Q --> R
-  R{desc_state[d] != FREE?} -- Yes --> S[num_pending++ ; num_pending_mask|=1<<d]
+  R{"desc_state[d] != FREE?"} -- Yes --> S["num_pending++ ; num_pending_mask|=1<<d"]
   R -- No --> T[No op]
   S --> U
   T --> U
   U --> K
-  K -- loop end --> V[if(debug) print status]
-  V --> W[return (desc_busy == 0xffff)]
+  K -- loop end --> V["if(debug) print status"]
+  V --> W["return (desc_busy == 0xffff)"]
 
-
-
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::work_thread()"]
 
   A[Start] --> B{probed?}
-  B -- No --> C[wait(probed_event)]
+  B -- No --> C[wait probed_event]
   B -- Yes --> D[Proceed]
   C --> D
   D --> E[Loop forever]
-  E --> F{use_irq && !irq.read()?}
-  F -- Yes --> G[wait(irq.posedge_event)]
-  F -- No --> H[wait(1 ns)]
+  E --> F{use_irq && !irq.read?}
+  F -- Yes --> G[wait irq.posedge_event]
+  F -- No --> H[wait 1 ns]
   G --> I
   H --> I
-  I --> J[r_avail = dev_read32(INTR_TXN_AVAIL_STATUS)]
+  I --> J[r_avail = dev_read32 INTR_TXN_AVAIL_STATUS]
   J --> K{r_avail == 0?}
   K -- Yes --> E
-  K -- No --> L[dev_write32(INTR_TXN_AVAIL_ENABLE, 0) // mask]
+  K -- No --> L[dev_write32 INTR_TXN_AVAIL_ENABLE, 0 // mask]
   L --> M[num_loops=0; debug=false]
-  M --> N[do { num_pending = process(r_avail); r_avail = dev_read32(INTR_TXN_AVAIL_STATUS); num_loops++; if(num_loops>10000) debug=true } while(r_avail || num_pending)]
-  N --> O[dev_write32(INTR_TXN_AVAIL_ENABLE, DESC_MASK) // re-enable]
+  M --> N["do { num_pending = process(r_avail); r_avail = dev_read32(INTR_TXN_AVAIL_STATUS); num_loops++; if(num_loops>10000) debug=true } while(r_avail || num_pending)"]
+  N --> O["dev_write32(INTR_TXN_AVAIL_ENABLE, DESC_MASK) // re-enable"]
   O --> E
 
-
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::is_axilite_slave() -> bool"]
 
   A[Start] --> B{return bridge_type == TYPE_AXI4_LITE_SLAVE || bridge_type == TYPE_PCIE_AXI4_LITE_SLAVE}
   B --> C[End]
 
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::is_axi4_slave() -> bool"]
 
   A[Start] --> B{return bridge_type == TYPE_AXI4_SLAVE || bridge_type == TYPE_PCIE_AXI4_SLAVE}
   B --> C[End]
 
-  flowchart TD
+flowchart TD
   title["axi2tlm_hw_bridge::we_b_transport(gp, delay)"]
 
   A[Start] --> B[init_socket->b_transport(gp, delay)]

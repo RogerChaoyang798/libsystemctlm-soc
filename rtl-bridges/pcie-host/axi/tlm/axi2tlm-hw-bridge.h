@@ -596,6 +596,10 @@ void axi2tlm_hw_bridge::work_thread(void)
 		num_loops = 0;
 		this->debug = false;
 		do {
+			// Free and release descriptors pending in AXI2TLM bridge during ACK handling.
+			// INTR_TXN_AVAIL_CLEAR_REG_ADDR_SLAVE.
+			// Partners with descriptor state to free and release resources when acknowledged.
+			// Loops until no descriptors are busy or pending; debug flag toggled after many iterations.
 			num_pending = process(r_avail);
 			r_avail = dev_read32(INTR_TXN_AVAIL_STATUS_REG_ADDR_SLAVE);
 			num_loops++;
