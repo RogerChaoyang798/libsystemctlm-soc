@@ -444,7 +444,7 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 		trans.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
 		return;
 	}
-
+	// reset_thread
 	if (!probed)
 		wait(probed_event);
 
@@ -485,3 +485,23 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 	} while (processing_wires);
 }
 #endif
+
+
+
+// Flow when aligner is enabled (see tlm2axi-hw-bridge.h:134–148):
+
+// tgt_socket.register_b_transport(this, &tlm2axi_hw_bridge::b_transport_proxy);
+// b_transport_proxy
+//  calls 
+// proxy_init_socket[0]->b_transport(trans, delay);
+// proxy_init_socket is bound to aligner->target_socket and aligner->init_socket is bound to proxy_target_socket.
+// proxy_target_socket->register_b_transport(this, &tlm2axi_hw_bridge::b_transport);
+// Result: external callers use tgt_socket, transactions go through the aligner, and then land on proxy_target_socket which invokes the real 
+// b_transport
+// .
+// Flow when aligner is disabled:
+
+// tgt_socket.register_b_transport(this, &tlm2axi_hw_bridge::b_transport);
+// Transactions hit 
+// b_transport
+//  directly; proxy_* sockets are not created.

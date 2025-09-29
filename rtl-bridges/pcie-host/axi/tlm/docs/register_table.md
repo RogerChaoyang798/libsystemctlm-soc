@@ -200,3 +200,9 @@ absolute_addr = base_addr + (0xC000 + data_offset)
 其中 base_addr 是桥实例的基地址（由仿真或平台配置提供）。
 Feedback submitted
 
+register map (BAR windows and descriptor registers)
+rtl-bridges/pcie-host/axi/tlm/private/user_master_addr.h
+Defines the BAR regions used as DMA staging buffers and all master-side registers:
+DRAM_OFFSET_WRITE_MASTER, DRAM_OFFSET_READ_MASTER
+DESC_0_*_REG_ADDR_MASTER, OWNERSHIP_*_MASTER, STATUS_RESP_REG_ADDR_MASTER, etc.
+These constants are the exact PCIe BAR offsets that the software writes/reads through VFIO.

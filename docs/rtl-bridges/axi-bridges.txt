@@ -35,7 +35,9 @@ Features and Specifications
 EndPoint)
 4. Supports AXI3/AXI4/AXI-LITE protocols
 
-
+Mode_0 vs Mode_1 的差异点
+Mode_0：软件直接通过 BAR 写/读桥内的 Data RAM（BAR 寄存器窗口）。
+Mode_1：软件提供 Host 内存地址；桥硬件在 Host 内存与桥内 Data RAM 之间搬运数据（写时从 Host 抓到 Data RAM，读时从 Data RAM 回填到 Host 内存）。
 AXI FPGA Bridges supports 3 modes of operation
 	
 1) Mode_0: Register Access mode ( Preferable for smaller size
