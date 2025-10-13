@@ -444,7 +444,7 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 		trans.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
 		return;
 	}
-	// reset_thread
+
 	if (!probed)
 		wait(probed_event);
 
@@ -455,14 +455,16 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 	if (is_write) {
 		dev_copy_to(DRAM_OFFSET_WRITE_MASTER + offset, data, len);
 	}
-
-	D(printf("hw bridge %s addr=%lx len=%d sw=%d be_len=%d\n",
-		is_write ? "write" : "read", (uint64_t)addr, len, sw, be_len));
+	cout << sc_time_stamp() << " " << name() << " Begin desc_access" << endl;
+	D(printf("[%s] hw bridge %s addr=%lx len=%d sw=%d be_len=%d\n",
+		name(), is_write ? "write" : "read", (uint64_t)addr, len, sw, be_len));
+	
 	resp = desc_access(0, addr, is_write, len, be, be_len, genattr);
 
 	if (!is_write && (resp == AXI_OKAY || resp == AXI_EXOKAY)) {
-		dev_copy_from(DRAM_OFFSET_READ_MASTER + offset, , len, be, be_len);
+		dev_copy_from(DRAM_OFFSET_READ_MASTER + offset, data, len, be, be_len);
 	}
+	cout << sc_time_stamp() << " " << name() << " End desc_access" << endl;
 	D(hexdump("tlm2axi-data: ", data, len));
 	tlm_gp_set_axi_resp(trans, resp);
 	mutex.unlock();
@@ -478,30 +480,8 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 	// For transactions that are non-Early-Ack, any wire update as side
 	// effects should be visible before we response.
 	process_wires_ev.notify();
-	
 	do {
-		// 执行 process_wires()，只能执行一个software trigger
 		wait(SC_ZERO_TIME);
 	} while (processing_wires);
 }
 #endif
-
-
-
-// Flow when aligner is enabled (see tlm2axi-hw-bridge.h:134–148):
-
-// tgt_socket.register_b_transport(this, &tlm2axi_hw_bridge::b_transport_proxy);
-// b_transport_proxy
-//  calls 
-// proxy_init_socket[0]->b_transport(trans, delay);
-// proxy_init_socket is bound to aligner->target_socket and aligner->init_socket is bound to proxy_target_socket.
-// proxy_target_socket->register_b_transport(this, &tlm2axi_hw_bridge::b_transport);
-// Result: external callers use tgt_socket, transactions go through the aligner, and then land on proxy_target_socket which invokes the real 
-// b_transport
-// .
-// Flow when aligner is disabled:
-
-// tgt_socket.register_b_transport(this, &tlm2axi_hw_bridge::b_transport);
-// Transactions hit 
-// b_transport
-//  directly; proxy_* sockets are not created.

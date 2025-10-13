@@ -172,7 +172,6 @@ protected:
 	void process_wires(void);
 	uint64_t c2h_wires_toggled(void);
 	int nr_connected_irq;
-	// 静态变量，所以所有实例共享一个通道
 	static sc_event process_wires_ev;
 	static unsigned int processing_wires;
 
@@ -285,43 +284,27 @@ void tlm_hw_bridge_base::process_wires(void)
 
 		if (nr_connected_irq == 0)
 			return;
-
+		// 此处会影响是否乱序？
 		do {
-			r_toggles = c2h_wires_toggled();//r_toggles如果不等于0，则跳过while循环
+			r_toggles = c2h_wires_toggled();
 			if (!r_toggles) {
-				// //r_toggles如果等于0，则等待irq.posedge_event()或process_wires_ev
 				if (!irq.read())
-					wait(irq.posedge_event() | process_wires_ev); // explicit process_wires_ev: software trigger
+					wait(irq.posedge_event() | process_wires_ev);	//此处会受tlm2axi_hw_bridge::b_transport影响
 			}
 		} while (r_toggles == 0);
 
 		processing_wires++;
-		// 32条中断线
 		dev_write32(INTR_C2H_TOGGLE_CLEAR_0_REG_ADDR_SLAVE,
 				r_toggles);
 		dev_write32(INTR_C2H_TOGGLE_CLEAR_1_REG_ADDR_SLAVE,
 				r_toggles >> 32);
-			// 64位读法
+
 		r_irqs = dev_read32(C2H_INTR_STATUS_1_REG_ADDR_SLAVE);
 		r_irqs <<= 32;
 		r_irqs |= dev_read32(C2H_INTR_STATUS_0_REG_ADDR_SLAVE);
 
 		D(printf("process-wires toggles=%lx r_irqs=%lx\n",
 			 r_toggles, r_irqs));
-		//For each C2H wire bit that toggled, drive the corresponding c2h_irq[i] signal according to the status bit stream.
-		//This loop:
-		//Reads the current interrupt status from hardware registers
-		//For each wire that has "toggled" (indicated in r_toggles), updates the corresponding c2h_irq[i] output
-		//Drives the signal with the current level (0 or 1) as read from the status register
-		//This mechanism allows level-sensitive interrupt signaling from hardware to the host model, synchronized with actual hardware state changes.
-
-		//Overall, c2h_irq is used exclusively within the tlm_hw_bridge_base class and is not called or referenced elsewhere in the codebase. It is a core part of the interrupt delivery path in PCIe TLM simulations, but its usage is confined to this single file and class.
-
-		//Notes
-		// c2h_irq is not shared between instances — although processing_wires and process_wires_ev are static, c2h_irq itself is a per-instance sc_vector, meaning each bridge module has its own set of 64 interrupt outputs.
-		// Unconnected c2h_irq[i] signals are bound to sig_dummy_bool[i] during elaboration to prevent SystemC runtime errors — this is a defensive design pattern common in TLM models.
-		// The "C2H" naming refers to Card-to-Host PCIe interrupt flow, distinguishing it from host-initiated (H2C) communication paths.
-		
 		for (i = 0; i < c2h_irq.size(); i++) {
 			if (r_toggles & bitops_mask64(i, 1)) {
 				c2h_irq[i].write(r_irqs & 1);
@@ -366,7 +349,7 @@ void tlm_hw_bridge_base::dev_access(tlm::tlm_command cmd, uint64_t offset,
 	dev_tr.set_dmi_allowed(false);
 	dev_tr.set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
 
-	bridge_socket->b_transport(dev_tr, delay);
+	bridge_socket->b_transport(dev_tr, delay);	//TLM payload -> PCIe/AXI-Lite BAR write buffer 
 	assert(dev_tr.get_response_status() == tlm::TLM_OK_RESPONSE);
 
 	// See comment about DMI above.
