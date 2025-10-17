@@ -78,15 +78,15 @@ Descriptors,,,,,
 DESC_N_BASE,0x3000 + ( N * 0x200 ),,,"Here, ""N"" is Descriptor Number. N = 0 to ( MAX_DESC -1 )",Currently N = 0 to 15 is supported
 DESC_N_TXN_TYPE_REG,DESC_N_BASE + 0x0,rw,0x0,Type Of Transaction (WR or RD),
 DESC_N_SIZE_REG,DESC_N_BASE + 0x4,rw,0x0,Size Of Transaction,
-DESC_N_DATA_OFFSET_REG,DESC_N_BASE + 0x8,rw,0x0,"For WR, offset addr of WDATA_RAM. For RD, offset addr of RDATA_RAM.",
+DESC_N_DATA_OFFSET_REG,DESC_N_BASE + 0x8,rw,0x0,"For WR, offset addr of WDATA_RAM. For RD, offset addr of RDATA_RAM.RAM的寄存器映射起始地址",
 DESC_N_DATA_HOST_ADDR_0_REG,DESC_N_BASE + 0x10,rw,0x0,Host Buffer Address for  WR or RD DATA,Valid only for Mode 1
 DESC_N_DATA_HOST_ADDR_1_REG,DESC_N_BASE + 0x14,rw,0x0,Host Buffer Address for  WR or RD DATA,Valid only for Mode 1
 DESC_N_DATA_HOST_ADDR_2_REG,DESC_N_BASE + 0x18,rw,0x0,Host Buffer Address for  WR or RD DATA,"Reserved for future use. Valid only for Mode 1,"
 DESC_N_DATA_HOST_ADDR_3_REG,DESC_N_BASE + 0x1C,rw,0x0,Host Buffer Address for  WR or RD DATA,"Reserved for future use. Valid only for Mode 1,"
-DESC_N_WSTRB_HOST_ADDR_0_REG,DESC_N_BASE + 0x20,rw,0x0,Host Buffer Address for �WSTRB,Valid only for Mode 1
-DESC_N_WSTRB_HOST_ADDR_1_REG,DESC_N_BASE + 0x24,rw,0x0,Host Buffer Address for �WSTRB,Valid only for Mode 1
-DESC_N_WSTRB_HOST_ADDR_2_REG,DESC_N_BASE + 0x28,rw,0x0,Host Buffer Address for �WSTRB,"Reserved for future use. Valid only for Mode 1,"
-DESC_N_WSTRB_HOST_ADDR_3_REG,DESC_N_BASE + 0x2C,rw,0x0,Host Buffer Address for �WSTRB,"Reserved for future use. Valid only for Mode 1,"
+DESC_N_WSTRB_HOST_ADDR_0_REG,DESC_N_BASE + 0x20,rw,0x0,Host Buffer Address for �WSTRB,Valid only for Mode 1
+DESC_N_WSTRB_HOST_ADDR_1_REG,DESC_N_BASE + 0x24,rw,0x0,Host Buffer Address for �WSTRB,Valid only for Mode 1
+DESC_N_WSTRB_HOST_ADDR_2_REG,DESC_N_BASE + 0x28,rw,0x0,Host Buffer Address for �WSTRB,"Reserved for future use. Valid only for Mode 1,"
+DESC_N_WSTRB_HOST_ADDR_3_REG,DESC_N_BASE + 0x2C,rw,0x0,Host Buffer Address for �WSTRB,"Reserved for future use. Valid only for Mode 1,"
 DESC_N_AXSIZE_REG,DESC_N_BASE + 0x30,rw,0x0,AXI Size Field,
 DESC_N_ATTR_REG,DESC_N_BASE + 0x34,rw,0x0,AXI Attributes,
 DESC_N_AXADDR_0_REG,DESC_N_BASE + 0x40,rw,0x0,DUT address (araddr/awaddr),"Currently, only register-0-1 is valid. Other registers are for future enhacement"

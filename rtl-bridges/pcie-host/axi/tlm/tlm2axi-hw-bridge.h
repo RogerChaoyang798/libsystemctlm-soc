@@ -451,6 +451,11 @@ void tlm2axi_hw_bridge::b_transport(tlm::tlm_generic_payload& trans,
 	addr += this->base_offset;
 	offset = addr % data_bytewidth;
 
+	uint32_t dly = dev_read32(C2H_GPIO_0_REG_ADDR_MASTER);
+	if (dly) {
+		wait(sc_time(dly, SC_NS));
+	}
+	
 	mutex.lock();
 	if (is_write) {
 		dev_copy_to(DRAM_OFFSET_WRITE_MASTER + offset, data, len);

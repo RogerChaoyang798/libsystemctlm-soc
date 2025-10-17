@@ -303,7 +303,17 @@ In Mode 1: Register block cannot access DataRAMs. The host master control block
 (described in following sections)  has Write access to WR DataRAM and Read
 access to RD DataRAM.
 
+在模式0中：寄存器块只能写入WR DataRAM（不可读访问），
+且只能从RD DataRAM读取（不可写访问）。
 
+在模式1中：寄存器块不能访问DataRAMs。主机主控块（在以下章节中描述）具有对WR DataRAM的写访问权限和对RD DataRAM的读访问权限。
+
+Mode1: 配置DESC_N_DATA_HOST_ADDR_0_REG等寄存器
+            +---------------------+                         +---------------------+                 
+            |                     |                         |                     |                 
+            | Host Buffer         |     Data                | DataRAM             |                 
+            |                     |<----------------------->|                     |                 
+            +---------------------+                         +---------------------+
 
 
 5-b User Master Control  
@@ -386,6 +396,14 @@ the User Master control block flips the corresponding OWNERSHIP bit and set the
 corresponding COMPLETION bit to indicate that transfer of a transaction
 pertaining to that Descriptor is complete.
 
+Mode-1:
+
+AXI WR: Apart from the configuration in Mode-0, SW driver fills WDATA in its
+memory and programs the address pointing to the host buffer. Once User Master
+gets Ownership, it will trigger Host Master Control to fetch WDATA from Host
+Buffers and place it in WR DataRAM. After the data transfer is done it will
+continue its operation as Mode-0.
+
 AXI RD transaction:
 
 Mode-0:
@@ -413,15 +431,7 @@ handle such cases, there is 'current offset address' counter per descriptor
 which maintains the offset address at which previous data from the same
 Descriptor ID ( By Looking at RID ) was stored before. 
 
-
-
 Mode-1:
-
-AXI WR: Apart from the configuration in Mode-0, SW driver fills WDATA in its
-memory and programs the address pointing to the host buffer. Once User Master
-gets Ownership, it will trigger Host Master Control to fetch WDATA from Host
-Buffers and place it in WR DataRAM. After the data transfer is done it will
-continue its operation as Mode-0.
 
 AXI RD: Apart from the configuration in Mode-0, SW driver allocates a buffer in
 its memory to store RDATA and programs the address pointing to the host buffer.
