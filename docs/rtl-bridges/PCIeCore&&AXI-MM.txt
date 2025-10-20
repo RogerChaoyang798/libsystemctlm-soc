@@ -1,0 +1,53 @@
+PCIe Core:
+There's the PCIe Core the implements the lower layers of the
+PCIe protocol and then there's the Endpoint User-Logic that
+implements a unique device with features such as an Ethernet
+MAC or a GPU.
+
+There are multiple vendors of PCIe cores and these cores expose
+slightly different interfaces towards the User Logic.
+
+The PCIe EP HW bridges in this projects are primarily implementing the
+ability to co-simulate Endpoint User-Logic RTL with high-level models
+of a Xilinx PCIe Core and a Host.
+
+
+
+
+
+
+
+AXI-MM Bridge在本仓库的实现形态
+TLM 模型：
+soc/pci/xilinx/xdma.h
+ 定义了 Xilinx XDMA 的 SystemC TLM-2.0 模型类 
+xilinx_xdma
+，提供 TLM AXI MM Master/Slave 接口以及中断向量映射。
+RTL 包装器：
+soc/pci/xilinx/xdma-rtl.h
+ 提供 
+xilinx_xdma_rtl
+，把上述 TLM 模型通过 tlm2axilite_bridge 和 axi2tlm_bridge 转成 RTL 侧可连接的 AXI-Lite 和 AXI-Full 接口，用于协同仿真/联动 QEMU。
+与 PCIe-AXI 桥的连接位置
+顶层 pcie_ep 将桥的 S_AXI_PCIE_M*（AXI4-Lite，用于配置）和 M_AXI_PCIE_M*（AXI4，用于 Mode-1 数据）暴露出来，实际工程中应连接到 XDMA IP；仓库里没有包含 Xilinx XDMA 的厂商 RTL，仅提供上述模型/包装对接。参考 
+rtl-bridges/pcie-host/pcie/rtl/ep/pcie_ep.v
+ 中端口和实例化，以及宏连接 \c_axi4lite、`c_axi4`。
+文档说明也指明时钟/复位通常来自 XDMA，例如 
+docs/pcie-rtl-bridges/pcie-ep-bridge.md
+ 和 
+docs/rtl-bridges/axi-master-bridge.txt
+。
+结论
+本仓库并未内置 Xilinx XDMA 的官方 RTL IP。
+XDMA 以 SystemC TLM 模型（
+soc/pci/xilinx/xdma.h
+）和其 RTL 包装（
+soc/pci/xilinx/xdma-rtl.h
+）形式存在，用于仿真/协同环境。
+实际 FPGA 集成时，在 pcie_ep 顶层的 S_AXI_PCIE_*/M_AXI_PCIE_* 接口应连接到外部工具（如 Vivado）生成的 XDMA IP。
+相关文件
+soc/pci/xilinx/xdma.h
+soc/pci/xilinx/xdma-rtl.h
+rtl-bridges/pcie-host/pcie/rtl/ep/pcie_ep.v
+docs/pcie-rtl-bridges/pcie-ep-bridge.md
+docs/rtl-bridges/axi-master-bridge.txt
